@@ -15,7 +15,7 @@ fi
 cd "$BUSYBOX_DIR"
 else
 if [ ! -d "$BUSYBOX_DIR" ]; then
-git clone https://git.busybox.net/busybox
+git clone https://github.com/mirror/busybox.git
 fi
 if [ ! -d "$NDK_DIR" ]; then
 if [ ! -f "$NDK_ZIP" ]; then
@@ -77,13 +77,14 @@ sed -i 's/\bgetsid\b/getsid_bb/g' libbb/missing_syscalls.c
 sed -i 's/\badjtimex\b/adjtimex_bb/g' libbb/missing_syscalls.c
 sed -i 's/\bsethostname\b/sethostname_bb/g' libbb/missing_syscalls.c
 sed -i 's/\bstrchrnul\b/strchrnul_bb/g' libbb/platform.c
-grep -rl "BusyBox v" . | xargs sed -i 's/BusyBox v/SuiALSBox\\n\\nBusyBox v/g'
+sed -i 's/sha1_process_block64_shaNI/sha1_process_block64/g' libbb/hash_md5_sha.c
+grep -rl "SuiALSBox\n\nBusyBox v" . | xargs sed -i 's/SuiALSBox\n\nBusyBox v/SuiALSBox\\n\\nSuiALSBox\n\nBusyBox v/g'
 fi
 REAL_LIBM=$(find "$TOOLCHAIN/../sysroot" -name libm.a | grep aarch64 | head -n 1)
 cp "$REAL_LIBM" ./libm.a
 "$TOOLCHAIN/llvm-ar" rcs libresolv.a
 make clean
-make -j$(nproc) CC="$TOOLCHAIN/${TARGET}${API}-clang" AR="$TOOLCHAIN/llvm-ar" NM="$TOOLCHAIN/llvm-nm" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$TOOLCHAIN/llvm-strip" EXTRA_CFLAGS="-O3 -fPIC -flto=full -fno-plt -fvisibility=hidden -ffast-math -falign-functions=64 -fdata-sections -ffunction-sections -fno-math-errno -fomit-frame-pointer -funroll-loops -mllvm -inline-threshold=3000 -mllvm -enable-load-pre=true -mllvm -interleave-loops=true -fno-asynchronous-unwind-tables -fno-stack-protector -D__ANDROID__ -Wno-unused-command-line-argument" EXTRA_LDFLAGS="-flto=full -Wl,--icf=all -Wl,-O3 -Wl,--lto-O3 -Wl,--Bsymbolic-functions -Wl,-z,max-page-size=16384 -Wl,--gc-sections -Wl,--as-needed -Wl,--sort-common" LDLIBS="m c dl"
+make -j$(nproc) CC="$TOOLCHAIN/${TARGET}${API}-clang" AR="$TOOLCHAIN/llvm-ar" NM="$TOOLCHAIN/llvm-nm" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$TOOLCHAIN/llvm-strip" EXTRA_CFLAGS="-O3 -fPIC -flto -fdata-sections -ffunction-sections -D__ANDROID__ -Wno-unused-command-line-argument" EXTRA_LDFLAGS="-flto -Wl,--gc-sections -Wl,--icf=all -Wl,-z,max-page-size=16384" LDLIBS="m c dl"
 $TOOLCHAIN/llvm-strip -s --strip-all busybox_unstripped -o busybox
 du -h busybox
 file busybox
