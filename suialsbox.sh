@@ -1,5 +1,6 @@
 #!/bin/bash
 clear
+sudo apt install bzip2 gcc make unzip -y
 ROOT_DIR=$(pwd)
 NDK_ZIP="android-ndk-r29-linux.zip"
 NDK_DIR="$ROOT_DIR/android-ndk-r29"
@@ -15,7 +16,7 @@ fi
 cd "$BUSYBOX_DIR"
 else
 if [ ! -d "$BUSYBOX_DIR" ]; then
-git clone https://github.com/mirror/busybox.git
+git clone https://git.busybox.net/busybox
 fi
 if [ ! -d "$NDK_DIR" ]; then
 if [ ! -f "$NDK_ZIP" ]; then
@@ -77,15 +78,13 @@ sed -i 's/\bgetsid\b/getsid_bb/g' libbb/missing_syscalls.c
 sed -i 's/\badjtimex\b/adjtimex_bb/g' libbb/missing_syscalls.c
 sed -i 's/\bsethostname\b/sethostname_bb/g' libbb/missing_syscalls.c
 sed -i 's/\bstrchrnul\b/strchrnul_bb/g' libbb/platform.c
-sed -i 's/sha1_process_block64_shaNI/sha1_process_block64/g' libbb/hash_md5_sha.c
-grep -rl "SuiALSBox\n\nBusyBox v" . | xargs sed -i 's/SuiALSBox\n\nBusyBox v/SuiALSBox\\n\\nSuiALSBox\n\nBusyBox v/g'
 fi
 REAL_LIBM=$(find "$TOOLCHAIN/../sysroot" -name libm.a | grep aarch64 | head -n 1)
 cp "$REAL_LIBM" ./libm.a
 "$TOOLCHAIN/llvm-ar" rcs libresolv.a
 make clean
-make -j$(nproc) CC="$TOOLCHAIN/${TARGET}${API}-clang" AR="$TOOLCHAIN/llvm-ar" NM="$TOOLCHAIN/llvm-nm" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$TOOLCHAIN/llvm-strip" EXTRA_CFLAGS="-O3 -fPIC -flto -fdata-sections -ffunction-sections -D__ANDROID__ -Wno-unused-command-line-argument" EXTRA_LDFLAGS="-flto -Wl,--gc-sections -Wl,--icf=all -Wl,-z,max-page-size=16384" LDLIBS="m c dl"
-$TOOLCHAIN/llvm-strip -s --strip-all busybox_unstripped -o busybox
+make -j$(nproc) CC="$TOOLCHAIN/${TARGET}${API}-clang" AR="$TOOLCHAIN/llvm-ar" NM="$TOOLCHAIN/llvm-nm" RANLIB="$TOOLCHAIN/llvm-ranlib" STRIP="$TOOLCHAIN/llvm-strip" EXTRA_CFLAGS="-Os -fPIC -flto -fdata-sections -ffunction-sections -fno-unwind-tables -fno-asynchronous-unwind-tables -fno-stack-protector -fomit-frame-pointer -D__ANDROID__ -Wno-unused-command-line-argument" EXTRA_LDFLAGS="-flto -Wl,--gc-sections -Wl,--icf=all -Wl,-z,max-page-size=16384 -Wl,--strip-all -Wl,--exclude-libs,ALL" LDLIBS="m c dl"
+$TOOLCHAIN/llvm-strip --strip-all --remove-section=.comment --remove-section=.note* busybox
 du -h busybox
 file busybox
 readelf -h busybox | grep Type
